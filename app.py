@@ -1,5 +1,6 @@
 import streamlit as st
 import sqlite3
+import pandas as pd 
 
 def get_connection():
     return sqlite3.connect("dashboard.db")    
@@ -24,6 +25,11 @@ def add_spending(date, amount, category, note):
     )
     conn.commit()
     conn.close()
+def get_spending():
+    conn = get_connection()
+    df = pd.read_sql_query("SELECT * FROM spending ORDER BY date DESC", conn)
+    conn.close()
+    return df
 
 init_db()
 
@@ -39,3 +45,7 @@ with st.form("spending_form"):
 if submitted:
     add_spending(date.isoformat(), amount, category, note)
     st.success("Saved!")
+
+st.header("Spending")
+df = get_spending()
+st.dataframe(df)

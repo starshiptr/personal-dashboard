@@ -34,6 +34,7 @@ def get_spending():
 init_db()
 
 st.title("Personal Dashboard")
+
 with st.form("spending_form"):
     date = st.date_input("Date")
     amount = st.number_input("Amount (₹)", min_value=0.0, step=10.0)
@@ -48,4 +49,11 @@ if submitted:
 
 st.header("Spending")
 df = get_spending()
+
+# --- month-to-date metric ---
+this_month = pd.Timestamp.now().strftime("%Y-%m")
+month_df = df[df["date"].str.startswith(this_month)]
+total = month_df["amount"].sum()
+st.metric("Spent this month", f"₹{total:,.0f}")
+
 st.dataframe(df)

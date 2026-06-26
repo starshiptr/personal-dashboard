@@ -169,6 +169,19 @@ with tab2:
         st.success("Changes saved!")
         st.rerun()
 
+    st.subheader("Month-end export")
+    if st.button("Export this month to vault", key="export_fitness"):
+        month_fdf = fdf[fdf["date"].str.startswith(this_month)]
+        table = month_fdf.to_markdown(index=False)
+        summary = f"## {this_month} — Fitness\n\n{table}\n"
+
+        export_path = r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think\finance\fitness-export.md"
+        with open(export_path, "w", encoding="utf-8") as f:
+            f.write(summary)
+
+        st.success(f"Exported to {export_path}")
+        st.markdown(summary)
+
 
 with tab3:                                 
     st.header("Tasks & Goals")

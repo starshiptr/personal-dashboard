@@ -2,8 +2,10 @@ import streamlit as st
 import sqlite3
 import pandas as pd 
 
+VAULT_TASKS = r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think\todolist\active.md"
+
 WORKOUTS = {
-    "Push":  ["Bench Press", "OHP", "Incline Bench", "Lateral Raise", "Tricep Pushdown"],
+    "Push": ["Bench Press", "OHP", "Incline Bench", "Lateral Raise", "Tricep Pushdown"],
     "Pull":  ["Pull-ups", "Seated Row", "Lat Pulldown", "Face Pull", "Preacher Curl"],
     "Legs":  ["Squat", "Leg Press", "Leg Extension", "Leg Curl", "Calf Raise"],
     "Upper": ["Incline Bench", "Lat Pulldown", "Seated Row", "Lateral Raise", "Overhead Tricep Ext", "Preacher Curl"],
@@ -76,7 +78,7 @@ init_db()
 
 st.title("Personal Dashboard")
 
-tab1, tab2 =st.tabs(["spending", "fitness"])
+tab1, tab2, tab3 =st.tabs(["spending", "fitness", "tasks"])
 
 with tab1: 
     with st.form("spending_form"):
@@ -131,3 +133,8 @@ with tab2:
     ex_df = fdf[fdf["exercise"] == exercise_choice]
     st.line_chart(ex_df, x="date", y="weight")
 
+with tab3:
+    st.header("Tasks & Goals")
+    with open(VAULT_TASKS, encoding="utf-8") as f:
+        text = f.read()
+    st.markdown(text)

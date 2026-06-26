@@ -76,6 +76,7 @@ def get_workout():
 
 init_db()
 
+st.set_page_config(layout="wide")
 st.title("Personal Dashboard")
 
 tab1, tab2, tab3 =st.tabs(["spending", "fitness", "tasks"])
@@ -106,7 +107,14 @@ with tab1:
     by_category = month_df.groupby("category")["amount"].sum()
     st.bar_chart(by_category)
 
-    st.dataframe(df)
+    st.subheader("Edit / Delete")
+    edited = st.data_editor(df, num_rows = "dynamic", disabled = ["id"], key = "spending editor")
+    if st.button("Save changes"):
+        with get_connection () as conn:
+            conn.execute("DELETE FROM spending")
+            edited.drop(columns=["id"]).to_sql("spending", conn, if_exists="append", index=False)
+        st.success("Changes saved!")
+        st.rerun()
 
 init_fitness_db()
 
@@ -133,7 +141,17 @@ with tab2:
     ex_df = fdf[fdf["exercise"] == exercise_choice]
     st.line_chart(ex_df, x="date", y="weight")
 
-with tab3:
+    st.subheader("Edit / Delete")
+    edited = st.data_editor(fdf, num_rows = "dynamic", disabled = ["id"], key = "Fitnesss Editor")
+    if st.button("Save changes", key="save fitness"):
+        with get_connection () as conn:
+            conn.execute("DELETE FROM Fitness_Log")
+            edited.drop(columns=["id"]).to_sql("Fitness_Log", conn, if_exists="append", index=False)
+        st.success("Changes saved!")
+        st.rerun()
+
+
+with tab3:                                 
     st.header("Tasks & Goals")
     with open(VAULT_TASKS, encoding="utf-8") as f:
         text = f.read()

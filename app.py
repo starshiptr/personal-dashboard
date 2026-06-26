@@ -115,6 +115,25 @@ with tab1:
             edited.drop(columns=["id"]).to_sql("spending", conn, if_exists="append", index=False)
         st.success("Changes saved!")
         st.rerun()
+    
+    st.subheader("Month-end export")
+    if st.button("Export this month to vault"):
+        lines = []
+        lines.append(f"## {this_month} — Spending Summary")
+        lines.append("")
+        lines.append(f"**Total:** ₹{total:,.0f} / ₹10,000 budget  (₹{10000 - total:,.0f} left)")
+        lines.append("")
+        lines.append("**By category:**")
+        for cat, amt in by_category.items():
+            lines.append(f"- {cat}: ₹{amt:,.0f}")
+        summary = "\n".join(lines)
+
+        export_path = r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think\finance\dashboard-export.md"
+        with open(export_path, "w", encoding="utf-8") as f:
+            f.write(summary)
+
+        st.success(f"Exported to {export_path}")
+        st.markdown(summary)
 
 init_fitness_db()
 

@@ -1,4 +1,5 @@
 <img width="1866" height="1078" alt="image" src="https://github.com/user-attachments/assets/1b9ba8b5-e199-4aab-94f9-71ed60c16c4a" />
+<img width="1878" height="943" alt="image" src="https://github.com/user-attachments/assets/a14ef2b2-b925-4756-be60-66831d0a4e26" />
 
 # Minimalist Personal Dashboard
 

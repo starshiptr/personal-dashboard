@@ -1,8 +1,12 @@
 import streamlit as st
 import sqlite3
 import pandas as pd 
+import os
 
-VAULT_TASKS = r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think\todolist\active.md"
+VAULT_ROOT = os.environ.get("VAULT_ROOT", r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think")
+VAULT_TASKS = os.path.join(VAULT_ROOT, "todolist", "active.md")
+spending_export = os.path.join(VAULT_ROOT, "finance", "dashboard-export.md")
+fitness_path = os.path.join(VAULT_ROOT, "finance", "fitness-export.md")
 
 WORKOUTS = {
     "Push": ["Bench Press", "OHP", "Incline Bench", "Lateral Raise", "Tricep Pushdown"],
@@ -138,11 +142,10 @@ with tab1:
             lines.append(f"- {cat}: ₹{amt:,.0f}")
         summary = "\n".join(lines)
 
-        export_path = r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think\finance\dashboard-export.md"
-        with open(export_path, "w", encoding="utf-8") as f:
+        with open(spending_export, "w", encoding="utf-8") as f:
             f.write(summary)
 
-        st.success(f"Exported to {export_path}")
+        st.success(f"Exported to {spending_export}")
         st.markdown(summary)
 
 init_fitness_db()
@@ -185,16 +188,19 @@ with tab2:
         table = month_fdf.to_markdown(index=False)
         summary = f"## {this_month} — Fitness\n\n{table}\n"
 
-        export_path = r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think\finance\fitness-export.md"
-        with open(export_path, "w", encoding="utf-8") as f:
+        with open(fitness_path, "w", encoding="utf-8") as f:
             f.write(summary)
 
-        st.success(f"Exported to {export_path}")
+        st.success(f"Exported to {fitness_path}")
         st.markdown(summary)
 
 
 with tab3:                                 
     st.header("Tasks & Goals")
-    with open(VAULT_TASKS, encoding="utf-8") as f:
-        text = f.read()
-    st.markdown(text)
+    try:
+        with open(VAULT_TASKS, encoding="utf-8") as f:
+            text = f.read()
+        st.markdown(text)
+    except FileNotFoundError:
+         st.warning(f"Vault not found at `{VAULT_TASKS}` — set VAULT_ROOT or sync the vault to this machine.")
+

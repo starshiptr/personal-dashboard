@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd 
 import os
 
-VAULT_ROOT = os.environ.get("VAULT_ROOT", r"C:\Users\temp-it.DESKTOP-8HTQT4S\claudexobsidian\think")
+VAULT_ROOT = os.environ.get("VAULT_ROOT", "vault")
 VAULT_TASKS = os.path.join(VAULT_ROOT, "todolist", "active.md")
 spending_export = os.path.join(VAULT_ROOT, "finance", "dashboard-export.md")
 fitness_path = os.path.join(VAULT_ROOT, "finance", "fitness-export.md")

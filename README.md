@@ -1,4 +1,6 @@
-# Personal Dashboard
+<img width="1866" height="1078" alt="image" src="https://github.com/user-attachments/assets/1b9ba8b5-e199-4aab-94f9-71ed60c16c4a" />
+
+# Minimalist Personal Dashboard
 
 A self-hosted daily very minimalist tracker for spending, fitness, and tasks — built with Streamlit + SQLite, deployed as an always-on service reachable from anywhere over Tailscale. Meant to work with an Obsidian Vault 
 

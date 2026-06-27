@@ -20,13 +20,17 @@ python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run app.py
+```
 
-Configuration
+## Configuration
 
-Set VAULT_ROOT to the folder holding your todolist/ and finance/ directories (used by the Tasks tab and exports):
+Set `VAULT_ROOT` to the folder holding your `todolist/` and `finance/` directories (used by the Tasks tab and exports):
+
+```bash
 export VAULT_ROOT=/path/to/vault        # Windows: setx VAULT_ROOT "C:\path\to\vault"
+```
 
-Deployment (always-on, access anywhere)
+## Deployment (always-on, access anywhere)
 
 Runs 24/7 on a headless Ubuntu Server VM:
 - systemd service keeps it running, auto-restarts on failure, starts at boot.

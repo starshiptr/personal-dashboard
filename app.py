@@ -79,7 +79,7 @@ init_db()
 st.set_page_config(layout="wide")
 st.title("Personal Dashboard")
 
-tab1, tab2, tab3 =st.tabs(["spending", "fitness", "tasks"])
+tab1, tab2, tab3 =st.tabs(["SPENDING", "FITNESS", "TASKS"])
 
 with tab1: 
     with st.form("spending_form"):
@@ -95,10 +95,20 @@ with tab1:
         st.success("Saved!")
 
     st.header("Spending")
+
     df = get_spending()
+  
+    this_month = st.sidebar.text_input("Month (YYYY-MM)", value=pd.Timestamp.now().strftime("%Y-%m"))
+    day_filter = st.sidebar.date_input("day", value=None)
+
+    if day_filter:
+        view = df[df["date"] == day_filter.isoformat()]
+    else:
+        view = df
+
+    st.dataframe(view)
 
     # --- month-to-date metric ---
-    this_month = pd.Timestamp.now().strftime("%Y-%m")
     month_df = df[df["date"].str.startswith(this_month)]
     total = month_df["amount"].sum()
     st.metric("Spent this month", f"₹{total:,.0f}", delta=f"₹{10000 - total:,.0f} Left")

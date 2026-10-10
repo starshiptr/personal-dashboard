@@ -1,7 +1,8 @@
-import streamlit as st
-import sqlite3
-import pandas as pd 
 import os
+import sqlite3
+
+import pandas as pd
+import streamlit as st
 
 VAULT_ROOT = os.environ.get("VAULT_ROOT", "vault")
 VAULT_TASKS = os.path.join(VAULT_ROOT, "todolist", "active.md")

@@ -120,7 +120,7 @@ with tab1:
     st.subheader("By category")
 
     by_category = month_df.groupby("category")["amount"].sum()
-    st.bar_chart(by_category)
+    st.bar_chart(by_category, horizontal=True)
 
     st.subheader("Edit / Delete")
     edited = st.data_editor(df, num_rows = "dynamic", disabled = ["id"], key = "spending editor")

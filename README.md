@@ -3,6 +3,8 @@
 
 # Personal Dashboard
 
+![CI](https://github.com/starshiptr/personal-dashboard/actions/workflows/ci.yml/badge.svg)
+
 A minimalist self hosted tracker for spending, fitness, and tasks. Built with Streamlit and SQLite, it runs as an always on service reachable from any device over Tailscale, and it reads and writes a companion Obsidian vault.
 
 ## Features

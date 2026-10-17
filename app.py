@@ -4,10 +4,10 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 
+from logic import export_path, invalid_rows, month_rows, save_table, valid_month
+
 VAULT_ROOT = os.environ.get("VAULT_ROOT", "vault")
 VAULT_TASKS = os.path.join(VAULT_ROOT, "todolist", "active.md")
-spending_export = os.path.join(VAULT_ROOT, "finance", "dashboard-export.md")
-fitness_path = os.path.join(VAULT_ROOT, "finance", "fitness-export.md")
 
 WORKOUTS = {
     "Push": ["Bench Press", "OHP", "Incline Bench", "Lateral Raise", "Tricep Pushdown"],
@@ -104,6 +104,9 @@ with tab1:
     df = get_spending()
   
     this_month = st.sidebar.text_input("Month (YYYY-MM)", value=pd.Timestamp.now().strftime("%Y-%m"))
+    if not valid_month(this_month):
+        st.error(f"Month must be YYYY-MM, e.g. 2026-10 (got {this_month!r}).")
+        st.stop()
     day_filter = st.sidebar.date_input("day", value=None)
 
     if day_filter:
@@ -114,7 +117,7 @@ with tab1:
     st.dataframe(view)
 
     # --- month-to-date metric ---
-    month_df = df[df["date"].str.startswith(this_month)]
+    month_df = month_rows(df, this_month)
     total = month_df["amount"].sum()
     st.metric("Spent this month", f"₹{total:,.0f}", delta=f"₹{10000 - total:,.0f} Left")
     st.subheader("By category")
@@ -123,13 +126,18 @@ with tab1:
     st.bar_chart(by_category, horizontal=True)
 
     st.subheader("Edit / Delete")
-    edited = st.data_editor(df, num_rows = "dynamic", disabled = ["id"], key = "spending editor")
+    edited = st.data_editor(df, num_rows = "dynamic", disabled = ["id"], key = "spending editor",
+                            column_config={"amount": st.column_config.NumberColumn(min_value=0)})
     if st.button("Save changes"):
-        with get_connection () as conn:
-            conn.execute("DELETE FROM spending")
-            edited.drop(columns=["id"]).to_sql("spending", conn, if_exists="append", index=False)
-        st.success("Changes saved!")
-        st.rerun()
+        problems = invalid_rows(edited, "amount")
+        if problems:
+            st.error("Not saved:\n\n" + "\n\n".join(problems))
+        else:
+            conn = get_connection()
+            save_table(conn, "spending", edited, ["date", "amount", "category", "note"])
+            conn.close()
+            st.success("Changes saved!")
+            st.rerun()
     
     st.subheader("Month-end export")
     if st.button("Export this month to vault"):
@@ -143,6 +151,7 @@ with tab1:
             lines.append(f"- {cat}: ₹{amt:,.0f}")
         summary = "\n".join(lines)
 
+        spending_export = export_path(VAULT_ROOT, "dashboard", this_month)
         with open(spending_export, "w", encoding="utf-8") as f:
             f.write(summary)
 
@@ -175,20 +184,26 @@ with tab2:
     st.line_chart(ex_df, x="date", y="weight")
 
     st.subheader("Edit / Delete")
-    edited = st.data_editor(fdf, num_rows = "dynamic", disabled = ["id"], key = "Fitnesss Editor")
+    edited = st.data_editor(fdf, num_rows = "dynamic", disabled = ["id"], key = "Fitnesss Editor",
+                            column_config={"weight": st.column_config.NumberColumn(min_value=0)})
     if st.button("Save changes", key="save fitness"):
-        with get_connection () as conn:
-            conn.execute("DELETE FROM Fitness_Log")
-            edited.drop(columns=["id"]).to_sql("Fitness_Log", conn, if_exists="append", index=False)
-        st.success("Changes saved!")
-        st.rerun()
+        problems = invalid_rows(edited, "weight")
+        if problems:
+            st.error("Not saved:\n\n" + "\n\n".join(problems))
+        else:
+            conn = get_connection()
+            save_table(conn, "Fitness_Log", edited, ["date", "workout_day", "exercise", "weight", "note"])
+            conn.close()
+            st.success("Changes saved!")
+            st.rerun()
 
     st.subheader("Month-end export")
     if st.button("Export this month to vault", key="export_fitness"):
-        month_fdf = fdf[fdf["date"].str.startswith(this_month)]
+        month_fdf = month_rows(fdf, this_month)
         table = month_fdf.to_markdown(index=False)
         summary = f"## {this_month} — Fitness\n\n{table}\n"
 
+        fitness_path = export_path(VAULT_ROOT, "fitness", this_month)
         with open(fitness_path, "w", encoding="utf-8") as f:
             f.write(summary)
 

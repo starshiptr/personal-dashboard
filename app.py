@@ -4,8 +4,16 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 
-from logic import export_path, invalid_rows, month_rows, save_table, valid_month
+from logic import (
+    budget_delta,
+    export_path,
+    invalid_rows,
+    month_rows,
+    save_table,
+    valid_month,
+)
 
+BUDGET = 10000
 VAULT_ROOT = os.environ.get("VAULT_ROOT", "vault")
 VAULT_TASKS = os.path.join(VAULT_ROOT, "todolist", "active.md")
 
@@ -86,8 +94,8 @@ st.title("Personal Dashboard")
 
 tab1, tab2, tab3 =st.tabs(["SPENDING", "FITNESS", "TASKS"])
 
-with tab1: 
-    with st.form("spending_form"):
+with tab1:
+    with st.form("spending_form", clear_on_submit=True):
         date = st.date_input("Date")
         amount = st.number_input("Amount (₹)", min_value=0.0, step=10.0)
         category = st.selectbox("Category", ["Food & Dining", "Transport", "Shopping", "Personal Care",
@@ -96,38 +104,45 @@ with tab1:
         submitted = st.form_submit_button("Add expense")
 
     if submitted:
-        add_spending(date.isoformat(), amount, category, note)
-        st.success("Saved!")
+        if amount <= 0:
+            st.error("Amount must be more than ₹0.")
+        else:
+            add_spending(date.isoformat(), amount, category, note)
+            st.success(f"Saved ₹{amount:,.0f} · {category}")
 
     st.header("Spending")
 
     df = get_spending()
-  
+
     this_month = st.sidebar.text_input("Month (YYYY-MM)", value=pd.Timestamp.now().strftime("%Y-%m"))
     if not valid_month(this_month):
         st.error(f"Month must be YYYY-MM, e.g. 2026-10 (got {this_month!r}).")
         st.stop()
-    day_filter = st.sidebar.date_input("day", value=None)
-
-    if day_filter:
-        view = df[df["date"] == day_filter.isoformat()]
-    else:
-        view = df
-
-    st.dataframe(view)
+    day_filter = st.sidebar.date_input("Day (optional)", value=None)
 
     # --- month-to-date metric ---
     month_df = month_rows(df, this_month)
     total = month_df["amount"].sum()
-    st.metric("Spent this month", f"₹{total:,.0f}", delta=f"₹{10000 - total:,.0f} Left")
+    st.metric(f"Spent in {this_month}", f"₹{total:,.0f}", delta=budget_delta(total, BUDGET))
+    st.progress(min(total / BUDGET, 1.0))
+    today = pd.Timestamp.now()
+    if this_month == today.strftime("%Y-%m") and total < BUDGET:
+        days_left = today.days_in_month - today.day + 1
+        st.caption(f"₹{(BUDGET - total) / days_left:,.0f}/day for the {days_left} days left")
+
+    view = month_df[month_df["date"] == day_filter.isoformat()] if day_filter else month_df
+    st.dataframe(view, hide_index=True, column_order=["date", "amount", "category", "note"],
+                 column_config={"amount": st.column_config.NumberColumn(format="₹%d")})
+
     st.subheader("By category")
 
-    by_category = month_df.groupby("category")["amount"].sum()
-    st.bar_chart(by_category, horizontal=True)
+    by_category = month_df.groupby("category")["amount"].sum().sort_values(ascending=False)
+    st.bar_chart(by_category, horizontal=True, sort=False)
 
-    st.subheader("Edit / Delete")
-    edited = st.data_editor(df, num_rows = "dynamic", disabled = ["id"], key = "spending editor",
-                            column_config={"amount": st.column_config.NumberColumn(min_value=0)})
+    with st.expander("Edit / Delete (all months)"):
+        edited = st.data_editor(df, num_rows = "dynamic", disabled = ["id"], key = "spending editor",
+                                hide_index=True,
+                                column_config={"amount": st.column_config.NumberColumn(min_value=0)})
     if st.button("Save changes"):
         problems = invalid_rows(edited, "amount")
         if problems:
@@ -144,7 +159,7 @@ with tab1:
         lines = []
         lines.append(f"## {this_month} — Spending Summary")
         lines.append("")
-        lines.append(f"**Total:** ₹{total:,.0f} / ₹10,000 budget  (₹{10000 - total:,.0f} left)")
+        lines.append(f"**Total:** ₹{total:,.0f} / ₹{BUDGET:,} budget  ({budget_delta(total, BUDGET)})")
         lines.append("")
         lines.append("**By category:**")
         for cat, amt in by_category.items():

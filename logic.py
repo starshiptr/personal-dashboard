@@ -17,6 +17,12 @@ def month_rows(df, month):
     return df[df["date"].str[:7] == month]
 
 
+def budget_delta(total, budget):
+    # st.metric colours by the leading "-": "₹-4,033" started with ₹, so overspend showed green/up
+    left = budget - total
+    return f"-₹{-left:,.0f} over" if left < 0 else f"₹{left:,.0f} left"
+
+
 def _valid_date(value):
     if not isinstance(value, str):
         return False

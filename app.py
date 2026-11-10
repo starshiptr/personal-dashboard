@@ -7,13 +7,15 @@ import streamlit as st
 from logic import (
     budget_delta,
     export_path,
+    get_budget,
     invalid_rows,
     month_rows,
     save_table,
+    set_budget,
     valid_month,
+    week_total,
 )
 
-BUDGET = 10000
 VAULT_ROOT = os.environ.get("VAULT_ROOT", "vault")
 VAULT_TASKS = os.path.join(VAULT_ROOT, "todolist", "active.md")
 
@@ -37,6 +39,13 @@ def init_db():
     amount REAL NOT NULL,
     category TEXT NOT NULL,
     note TEXT
+    )
+""")
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS budgets (
+    month TEXT PRIMARY KEY,
+    monthly REAL NOT NULL,
+    weekly REAL NOT NULL
     )
 """)
     conn.commit()
@@ -120,15 +129,33 @@ with tab1:
         st.stop()
     day_filter = st.sidebar.date_input("Day (optional)", value=None)
 
+    # --- budgets: editable any time, saved per month ---
+    conn = get_connection()
+    BUDGET, WEEKLY = get_budget(conn, this_month)
+    conn.close()
+    with st.sidebar.form("budget_form"):
+        st.caption(f"Budget for {this_month}")
+        new_monthly = st.number_input("Monthly (₹)", min_value=0.0, step=100.0, value=BUDGET)
+        new_weekly = st.number_input("Weekly (₹)", min_value=0.0, step=50.0, value=WEEKLY)
+        if st.form_submit_button("Save budget"):
+            conn = get_connection()
+            set_budget(conn, this_month, new_monthly, new_weekly)
+            conn.close()
+            st.rerun()
+
     # --- month-to-date metric ---
     month_df = month_rows(df, this_month)
     total = month_df["amount"].sum()
     st.metric(f"Spent in {this_month}", f"₹{total:,.0f}", delta=budget_delta(total, BUDGET))
-    st.progress(min(total / BUDGET, 1.0))
+    st.progress(min(total / BUDGET, 1.0) if BUDGET else 1.0)
     today = pd.Timestamp.now()
-    if this_month == today.strftime("%Y-%m") and total < BUDGET:
-        days_left = today.days_in_month - today.day + 1
-        st.caption(f"₹{(BUDGET - total) / days_left:,.0f}/day for the {days_left} days left")
+    if this_month == today.strftime("%Y-%m"):
+        if total < BUDGET:
+            days_left = today.days_in_month - today.day + 1
+            st.caption(f"₹{(BUDGET - total) / days_left:,.0f}/day for the {days_left} days left")
+        week = week_total(df, today.date())
+        st.metric("Spent this week (Mon–Sun)", f"₹{week:,.0f}", delta=budget_delta(week, WEEKLY))
+        st.progress(min(week / WEEKLY, 1.0) if WEEKLY else 1.0)
 
     view = month_df[month_df["date"] == day_filter.isoformat()] if day_filter else month_df
     st.dataframe(view, hide_index=True, column_order=["date", "amount", "category", "note"],

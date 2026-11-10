@@ -23,6 +23,34 @@ def budget_delta(total, budget):
     return f"-₹{-left:,.0f} over" if left < 0 else f"₹{left:,.0f} left"
 
 
+DEFAULT_BUDGET = (10000.0, 2500.0)  # (monthly, weekly), used until the first one is saved
+
+
+def get_budget(conn, month):
+    """(monthly, weekly) for a month: its own row, else the latest earlier month, else the default.
+    So a new month inherits last month's figures without anyone copying them."""
+    row = conn.execute("SELECT monthly, weekly FROM budgets WHERE month <= ? ORDER BY month DESC LIMIT 1",
+                       (month,)).fetchone()
+    return tuple(row) if row else DEFAULT_BUDGET
+
+
+def set_budget(conn, month, monthly, weekly):
+    """Save (or overwrite) a month's budget. Safe to call mid-month: spending is never touched."""
+    if monthly < 0 or weekly < 0:
+        raise ValueError("budgets must be 0 or more")
+    with conn:
+        conn.execute("INSERT INTO budgets (month, monthly, weekly) VALUES (?, ?, ?) "
+                     "ON CONFLICT(month) DO UPDATE SET monthly = excluded.monthly, weekly = excluded.weekly",
+                     (month, monthly, weekly))
+
+
+def week_total(df, today):
+    """Spend from Monday to Sunday of the week containing `today` (a datetime.date)."""
+    monday = today - datetime.timedelta(days=today.weekday())
+    sunday = monday + datetime.timedelta(days=6)
+    return df[(df["date"] >= monday.isoformat()) & (df["date"] <= sunday.isoformat())]["amount"].sum()
+
+
 def _valid_date(value):
     if not isinstance(value, str):
         return False
